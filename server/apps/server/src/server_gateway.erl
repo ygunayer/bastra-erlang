@@ -20,13 +20,13 @@ handle_cast({join, {Pid, Username}}, State = {ready, StateData}) ->
 
     case lists:keyfind(Username, 1, Sessions) of
         false ->
-            logger:debug("[gateway] Player ~s is joining with pid ~w", [Username, Pid]),
+            logger:info("[gateway] Player ~s is joining with pid ~w", [Username, Pid]),
 
             Player = #{pid => Pid, username => Username},
 
             util:when_terminated(Pid,
                 fun(_) ->
-                    logger:debug("[gateway] Origin process of player ~s was terminated, disconnecting user", [Username]),
+                    logger:info("[gateway] Origin process of player ~s was terminated, disconnecting user", [Username]),
                     gen_server:cast(?SERVER_NAME, {leave, {Pid, Username}})
                 end
             ),
@@ -40,7 +40,7 @@ handle_cast({join, {Pid, Username}}, State = {ready, StateData}) ->
                     {_, Opponent, _} = lists:keyfind(OpponentUsername, 1, Sessions),
 
                     {ok, GamePid} = server_game_sup:create_room([Player, Opponent]),
-                    logger:debug("[gateway] Players ~s and ~s were matched up against each other in game ~w", [Username, OpponentUsername, GamePid]),
+                    logger:info("[gateway] Players ~s and ~s were matched up against each other in game ~w", [Username, OpponentUsername, GamePid]),
 
                     NewSessions = lists:keystore(
                         Username,
@@ -55,7 +55,7 @@ handle_cast({join, {Pid, Username}}, State = {ready, StateData}) ->
                         games => Games ++ [GamePid]
                     };
                 _ ->
-                    logger:debug("[gateway] Player ~s was added to the matchmaking queue", [Username]),
+                    logger:info("[gateway] Player ~s was added to the matchmaking queue", [Username]),
                     #{
                         sessions => lists:keystore(Username, 1, Sessions, {Username, Player, in_lobby}),
                         mmq => Queue ++ [Username],

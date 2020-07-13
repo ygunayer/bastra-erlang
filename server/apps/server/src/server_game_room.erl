@@ -41,40 +41,40 @@ inform_game_state(Game = #{id := GameId}) ->
 init({[P1, P2]}) ->
     #{pid := Pid1} = P1,
     #{pid := Pid2} = P2,
-    Id = "game:" ++ util:random_string(8),
     Game = bastra_game:new([P1, P2]),
     Pid1 ! {self(), join_game},
     Pid2 ! {self(), join_game},
 
-    {ok, {initializing, #{id => Id, game => Game}}}.
+    gen_server:cast(self(), {start}),
+
+    {ok, {initializing, Game}}.
 
 handle_call(_Request, _From, State) ->
     {reply, {nack}, State}.
 
-handle_cast({start}, {initializing, StateData}) ->
-    #{game := GameBefore} = StateData,
+handle_cast({start}, {initializing, GameBefore}) ->
 
     GameNow = bastra_game:start(GameBefore),
 
     #{currentPlayer := #{identity := #{pid := PidCurrent}}} = GameNow,
 
-    inform_game_state(GameBefore),
+    inform_game_state(GameNow),
 
-    NewStateData = maps:merge(StateData, #{game => GameNow}),
-    {noreply, {in_turn, PidCurrent, NewStateData}};
-handle_cast({play, Sender, CardNo}, {in_turn, PidCurrent, StateData}) when PidCurrent == Sender ->
-    #{game := GameBefore} = StateData,
-    NewStateData =
+    {noreply, {in_turn, PidCurrent, GameNow}};
+
+handle_cast({play, Sender, CardNo}, {in_turn, PidCurrent, GameBefore}) when PidCurrent == Sender ->
+    GameNow =
         case bastra_game:play_card(CardNo, GameBefore) of
             illegal ->
                 Sender ! {nack},
-                StateData;
-            GameNow ->
+                GameBefore;
+            Other ->
                 Sender ! {ack},
-                inform_game_state(GameNow),
-                GameNow
+                inform_game_state(Other),
+                Other
         end,
-    {noreply, {in_turn, PidCurrent, NewStateData}};
+    {noreply, {in_turn, PidCurrent, GameNow}};
+
 handle_cast(_Message, State) ->
     {noreply, State}.
 

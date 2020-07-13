@@ -3,6 +3,8 @@
 -export([new/1, start/1, play_card/2]).
 
 new([P1, P2]) ->
+    Id = "game:" ++ util:random_string(8),
+
     Deck = util:shuffle(?ALL_CARDS ++ ?ALL_CARDS),
 
     {Current, Next} =
@@ -12,6 +14,7 @@ new([P1, P2]) ->
         end,
 
     #{
+        id => Id,
         status => starting,
         currentPlayer => #{
             identity => Current,

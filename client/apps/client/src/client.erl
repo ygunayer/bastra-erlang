@@ -13,10 +13,11 @@ start_link() ->
     {ok, Pid}.
 
 init() ->
-    Username = os:getenv("X"),
     {ok, ServerAddress} = application:get_env(client, server_address),
     GatewayRef = {gateway, ServerAddress},
-    %{ok, [Username]} = io:fread("Welcome to Bastra! Please enter your name.", "~s"),
+    %Username = util:random_string(8),
+    Username = io:get_line("Welcome to Bastra! Please enter your name."),
+    io:format("SIKIK ~w~n", [Username]),
     State = #{
         gateway => GatewayRef,
         game => none,
@@ -64,15 +65,18 @@ playing(State = #{game := GamePid}) ->
             #{hand := Hand, score := Score, top_card := TopCard, opponent_score := OpponentScore} = TurnInfo,
 
             io:format("It's your turn now. Your score: ~w, Opponent's Score: ~w~n", [Score, OpponentScore]),
-            io:format("The top-most card is ~w~n", [TopCard]),
-            lists:foldl(
+            io:format("The top-most card is ~ts~n", [cards:name(TopCard)]),
+            CardCount = lists:foldl(
                 fun(Card, N) ->
-                    io:format("~w. ~w~n", [N, Card]),
+                    io:format("~w. ~ts~n", [N, cards:name(Card)]),
                     N + 1
                 end,
                 1,
                 Hand
             ),
+
+            Anan = io:get_line(io_lib:format("Choose a card to play (1-~w)", [CardCount])),
+            io:format("ANAN ~w~n", [Anan]),
 
             NewState = maps:put(turn_info, TurnInfo, State),
             playing(NewState);
